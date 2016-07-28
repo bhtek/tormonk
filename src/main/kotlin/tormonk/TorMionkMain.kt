@@ -13,10 +13,10 @@ import javax.annotation.PostConstruct
 
 @SpringBootApplication
 @PropertySource("classpath:/config.local.propertiess", ignoreResourceNotFound = true)
-open class Application {
+open class TorMonkApplication {
     companion object {
         @JvmStatic fun main(args: Array<String>) {
-            SpringApplication.run(Application::class.java, *args)
+            SpringApplication.run(TorMonkApplication::class.java, *args)
         }
     }
 
