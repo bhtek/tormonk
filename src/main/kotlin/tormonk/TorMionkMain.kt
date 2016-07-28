@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController
 import javax.annotation.PostConstruct
 
 @SpringBootApplication
-@PropertySource("classpath:/config.local.propertiess", ignoreResourceNotFound = true)
+@PropertySource("classpath:/config.local.properties", ignoreResourceNotFound = true)
 open class TorMonkApplication {
     companion object {
         @JvmStatic fun main(args: Array<String>) {
