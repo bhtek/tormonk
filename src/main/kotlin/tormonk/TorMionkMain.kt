@@ -1,5 +1,7 @@
 package com.sc.boonatsc.autosync
 
+import com.github.kittinunf.fuel.httpGet
+import com.github.kittinunf.result.Result
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
@@ -20,10 +22,10 @@ open class TorMonkApplication {
         }
     }
 
-    @Bean open fun propertySourcesPlaceholderConfigurer(): PropertySourcesPlaceholderConfigurer {
-        val configurer = PropertySourcesPlaceholderConfigurer()
-        configurer.setNullValue("@null")
-        return configurer
+    @Bean open fun propertySourcesPlaceholderConfigurator(): PropertySourcesPlaceholderConfigurer {
+        val configurator = PropertySourcesPlaceholderConfigurer()
+        configurator.setNullValue("@null")
+        return configurator
     }
 }
 
@@ -40,6 +42,18 @@ class AutoSyncController {
 class DoOnStartup {
     @Value("\${auto-sync.server:@null}") var serverAddress: String? = null
     @PostConstruct fun init() {
+        val url = "http://showrss.info/user/72839.rss?magnets=true&namespaces=true&name=null&quality=null&re=null"
+        url.httpGet().responseString { request, response, result ->
+            when (result) {
+                is Result.Failure -> {
+                    print("Failed to fetch from remote.")
+                }
+                is Result.Success -> {
+                    print("RSS Result: ${result}")
+                }
+            }
+        }
+
         print(serverAddress)
     }
 }
