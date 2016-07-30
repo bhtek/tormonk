@@ -1,19 +1,20 @@
-package com.sc.boonatsc.autosync
+package tormonk
 
-import com.github.kittinunf.fuel.httpGet
-import com.github.kittinunf.result.Result
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.PropertySource
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer
 import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import javax.annotation.PostConstruct
+import javax.annotation.Resource
 
 @SpringBootApplication
+@ComponentScan("tormonk")
 @PropertySource("classpath:/config.local.properties", ignoreResourceNotFound = true)
 open class TorMonkApplication {
     companion object {
@@ -41,19 +42,9 @@ class AutoSyncController {
 @Component
 class DoOnStartup {
     @Value("\${auto-sync.server:@null}") var serverAddress: String? = null
-    @PostConstruct fun init() {
-        val url = "http://showrss.info/user/72839.rss?magnets=true&namespaces=true&name=null&quality=null&re=null"
-        url.httpGet().responseString { request, response, result ->
-            when (result) {
-                is Result.Failure -> {
-                    print("Failed to fetch from remote.")
-                }
-                is Result.Success -> {
-                    print("RSS Result: ${result}")
-                }
-            }
-        }
+    @Resource lateinit var checkvistTracker : CheckvistTracker
 
-        print(serverAddress)
+    @PostConstruct fun init() {
+        println("Last Update Time: ${checkvistTracker.getLastUpdateTime()}")
     }
 }
