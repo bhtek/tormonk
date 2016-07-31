@@ -19,8 +19,8 @@ class CheckvistTracker {
         override fun deserialize(inputStream: InputStream) = Parser().parse(inputStream) as JsonArray<JsonObject>
     }
 
-    fun getLastUpdateTime(): Long {
-        val lastUpdateTime = checkvistService?.remote<Long> { token ->
+    fun getLastUpdateTime(): Long? {
+        val lastUpdateTime = checkvistService?.remote<Long?>(fun(token): Long? {
             println("Using token: ${token}")
             val (request, response, result) = getTasksUrl.httpGet(listOf("token" to token, "with_notes" to true)).responseObject(Deserializer())
 
@@ -48,12 +48,14 @@ class CheckvistTracker {
                     // TODO Next, to change to reading the notes...
                     lastUploadedJsonObject[0].long("checklist_id") ?: -1
                 } else {
-                    -2
+                    return null
                 }
             } else {
-                -1
+                return null
             }
-        }
+
+            return null
+        })
 
         return lastUpdateTime
     }
