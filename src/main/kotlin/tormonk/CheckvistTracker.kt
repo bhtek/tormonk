@@ -20,9 +20,9 @@ class CheckvistTracker {
     }
 
     fun getLastUpdateTime(): Long {
-        val lastUpdateTime = checkvistService.remote<Long> { token ->
+        val lastUpdateTime = checkvistService?.remote<Long> { token ->
             println("Using token: ${token}")
-            val (request, response, result) = getTasksUrl.httpGet(listOf("token" to token)).responseObject(Deserializer())
+            val (request, response, result) = getTasksUrl.httpGet(listOf("token" to token, "with_notes" to true)).responseObject(Deserializer())
 
             //do something with response
             var jsonArr: JsonArray<JsonObject>? = null
@@ -40,8 +40,16 @@ class CheckvistTracker {
                     "Last Uploaded by tormonk".equals(it.string("content"))
                 }
 
-                // TODO Next, to change to reading the notes...
-                lastUploadedJsonObject[0].long("checklist_id") ?: -1
+                val notesJsonArr = lastUploadedJsonObject[0].array<JsonObject>("notes")
+                if (notesJsonArr != null) {
+                    val noteObj = notesJsonArr[0]?.obj("note")
+                    print("WHAT WE WANT[" + noteObj?.string("comment") + "]")
+
+                    // TODO Next, to change to reading the notes...
+                    lastUploadedJsonObject[0].long("checklist_id") ?: -1
+                } else {
+                    -2
+                }
             } else {
                 -1
             }
