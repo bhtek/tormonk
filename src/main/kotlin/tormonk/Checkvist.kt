@@ -18,7 +18,7 @@ class CheckvistService(checklistId: Long) {
     private var token: String = login()
 
     fun login(): String {
-        return "mvMQETdYvEBDFMGVxjVnQ2PtGaUkYn"
+        return "7P35qpoIURdwak6eT0oGHKZk9G9Pay"
     }
 
     fun <T> remote(body: (String) -> T): T {

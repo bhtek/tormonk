@@ -6,6 +6,7 @@ import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.result.Result
 import org.springframework.stereotype.Component
 import java.io.InputStream
+import java.lang.Long.parseLong
 
 @Component
 class CheckvistTracker {
@@ -45,8 +46,7 @@ class CheckvistTracker {
                     val noteObj = notesJsonArr[0]?.obj("note")
                     print("WHAT WE WANT[" + noteObj?.string("comment") + "]")
 
-                    // TODO Next, to change to reading the notes...
-                    lastUploadedJsonObject[0].long("checklist_id") ?: -1
+                    return parseLong(noteObj?.string("comment"))
                 } else {
                     return null
                 }
