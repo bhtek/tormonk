@@ -52,7 +52,11 @@ class CheckvistService(checklistId: Long) {
             tokenFile.writeText(token)
         }
 
-        return body(token)
+        try {
+            return body(token)
+        } finally {
+            lastActivity = System.currentTimeMillis()
+        }
     }
 
     fun getTasks(): List<CheckvistTask> {
