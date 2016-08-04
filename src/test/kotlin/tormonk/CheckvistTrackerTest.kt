@@ -35,10 +35,11 @@ class CheckvistTrackerTest {
 fun main(args: Array<String>) {
     val document = SAXBuilder().build(tormonk.TorMonkApplication.javaClass.getResource("/showrss_test.rss"))
     val channel = JDOM.load(document.rootElement, Channel::class.java)
+    channel.initAfterXmlLoaded()
 
     println("Woohoo: ${channel.title}")
     for (item in channel.items.orEmpty()) {
-        println("Diff titles: ${item.title}")
+        println("Diff titles: ${item.title} @ ${item.pubDate}")
     }
 }
 
