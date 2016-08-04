@@ -37,5 +37,8 @@ fun main(args: Array<String>) {
     val channel = JDOM.load(document.rootElement, Channel::class.java)
 
     println("Woohoo: ${channel.title}")
+    for (item in channel.items.orEmpty()) {
+        println("Diff titles: ${item.title}")
+    }
 }
 
