@@ -39,7 +39,7 @@ fun main(args: Array<String>) {
 
     println("Woohoo: ${channel.title}")
     for (item in channel.items.orEmpty()) {
-        println("Diff titles: ${item.title} @ ${item.pubDate}")
+        println("Diff titles: ${item.title} @ ${item.pubDate} and link ${item.link}")
     }
 }
 
