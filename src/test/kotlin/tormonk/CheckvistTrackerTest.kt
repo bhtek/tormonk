@@ -34,7 +34,7 @@ class CheckvistTrackerTest {
 
 fun main(args: Array<String>) {
     val document = SAXBuilder().build(tormonk.TorMonkApplication.javaClass.getResource("/showrss_test.rss"))
-    val channel = JDOM.load(document.rootElement, Channel::class.java)
+    val channel = JDOM.load(document.rootElement, RssChannel::class.java)
     channel.initAfterXmlLoaded()
 
     println("Woohoo: ${channel.title}")

@@ -58,12 +58,4 @@ class CheckvistService(checklistId: Long) {
             lastActivity = System.currentTimeMillis()
         }
     }
-
-    fun getTasks(): List<CheckvistTask> {
-        return ArrayList()
-    }
 }
-
-data class CheckvistTask(val id: String, val content: String, val status: Short, val notes: List<CheckvistNote>)
-
-data class CheckvistNote(val id: String, val comment: String)

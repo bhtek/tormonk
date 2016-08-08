@@ -1,15 +1,10 @@
 package tormonk
 
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
-import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.PropertySource
-import org.springframework.context.support.PropertySourcesPlaceholderConfigurer
 import org.springframework.stereotype.Component
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
 import javax.annotation.PostConstruct
 import javax.annotation.Resource
 
@@ -22,29 +17,16 @@ open class TorMonkApplication {
             SpringApplication.run(TorMonkApplication::class.java, *args)
         }
     }
-
-    @Bean open fun propertySourcesPlaceholderConfigurator(): PropertySourcesPlaceholderConfigurer {
-        val configurator = PropertySourcesPlaceholderConfigurer()
-        configurator.setNullValue("@null")
-        return configurator
-    }
-}
-
-@RestController
-@RequestMapping("/auto-sync")
-class AutoSyncController {
-    @RequestMapping("/register")
-    fun register(): String {
-        return "hello world"
-    }
 }
 
 @Component
 class DoOnStartup {
-    @Value("\${auto-sync.server:@null}") var serverAddress: String? = null
-    @Resource lateinit var checkvistTracker : CheckvistTracker
+    @Resource lateinit var checkvistTracker: CheckvistTracker
+    @Resource lateinit var showRss: ShowRss
 
     @PostConstruct fun init() {
-        println("Last Update Time: ${checkvistTracker.getLastUpdateTime()}")
+        val lastUpdateTime = checkvistTracker.getLastUpdateTime() ?: return
+        val channel = showRss.getNewItems(lastUpdateTime)
+        checkvistTracker.addTorrentTasks(channel.items ?: emptyList())
     }
 }
