@@ -25,8 +25,15 @@ class DoOnStartup {
     @Resource lateinit var showRss: ShowRss
 
     @PostConstruct fun init() {
-        val lastUpdateTime = checkvistTracker.getLastUpdateTime() ?: return
+        val allTasks = checkvistTracker.getAllTasks() ?: return
+        val lastUpdateTime = checkvistTracker.getLastUpdateTime(allTasks) ?: return
+        checkvistTracker.processTasks(allTasks)
+
         val channel = showRss.getNewItems(lastUpdateTime)
-        checkvistTracker.addTorrentTasks(channel.items ?: emptyList())
+        checkvistTracker.addTorrentTasks(channel.items!!)
+
+        if (channel.items!!.size > 0) {
+            checkvistTracker.setLastUpdateTime(channel.items!![0].pubDate!!.millis)
+        }
     }
 }

@@ -41,6 +41,7 @@ class ShowRss {
 
         val rssChannel = result.get()
         rssChannel.items = rssChannel.items?.filter { item -> (item.pubDate?.isAfter(lastUpdatedTime) ?: false) }
+        rssChannel.items = rssChannel.items ?: emptyList()
 
         return rssChannel
     }

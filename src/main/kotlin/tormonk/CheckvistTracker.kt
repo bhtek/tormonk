@@ -4,7 +4,11 @@ import com.beust.klaxon.*
 import com.github.kittinunf.fuel.core.ResponseDeserializable
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.fuel.httpPost
+import com.github.kittinunf.fuel.httpPut
 import com.github.kittinunf.result.Result
+import com.jcraft.jsch.ChannelExec
+import com.jcraft.jsch.JSch
+import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.InputStream
@@ -14,7 +18,9 @@ import java.lang.Long.parseLong
 class CheckvistTracker {
     companion object {
         val specialChecklistId: Long = 569126
-        val specialNoteId: Long = 918294
+        var specialTaskId: Long? = null
+        var specialNoteId: Long? = null
+
         val checkvistService = CheckvistService(specialChecklistId)
         val getTasksUrl = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks.json"
         val postTaskUrl = getTasksUrl
@@ -30,51 +36,55 @@ class CheckvistTracker {
         override fun deserialize(inputStream: InputStream) = Parser().parse(inputStream) as JsonObject
     }
 
-    fun getLastUpdateTime(): Long? {
-        return checkvistService?.remote<Long?>(fun(token): Long? {
-            println("Using token: ${token}")
+    fun getAllTasks(): JsonArray<JsonObject>? {
+        return checkvistService.remote(fun(token): JsonArray<JsonObject>? {
             val (request, response, result) = getTasksUrl.httpGet(listOf("token" to token, "with_notes" to true)).responseObject(JsonArrayDeserializer())
 
             if (result is Result.Failure) {
                 LOG.error("Remote service GET [$getTasksUrl] failed.", result.error.exception)
                 return null
             }
-            val jsonArr: JsonArray<JsonObject> = result.get()
-
-            val lastUploadedJsonObject = (jsonArr as JsonArray<JsonObject>).filter {
-                "Last Uploaded by tormonk".equals(it.string("content"))
-            }
-
-            if (lastUploadedJsonObject.size < 1) {
-                LOG.error("Failed to load proper task object from JSON.")
-                return null
-            }
-            val notesJsonArr = lastUploadedJsonObject[0].array<JsonObject>("notes")
-
-            if (notesJsonArr == null) {
-                LOG.error("Failed to find note object arrau from JSON.")
-                return null
-            }
-            val noteObj = notesJsonArr[0]?.obj("note")
-
-            if (noteObj == null) {
-                LOG.error("Failed to identify expected note object from JSON.")
-                return null
-            }
-
-            val commentString = noteObj.string("comment")
-
-            try {
-                return parseLong(commentString)
-            } catch (e: Exception) {
-                LOG.error("Failed to parse comment string [${commentString}].", e)
-                return null
-            }
+            return result.get()
         })
     }
 
+    fun getLastUpdateTime(jsonArr: JsonArray<JsonObject>): Long? {
+        val lastUploadedJsonObject = jsonArr.filter {
+            "Last Uploaded by tormonk".equals(it.string("content"))
+        }
+
+        if (lastUploadedJsonObject.size < 1) {
+            LOG.error("Failed to load proper task object from JSON.")
+            return null
+        }
+
+        specialTaskId = lastUploadedJsonObject[0].long("id")
+        val notesJsonArr = lastUploadedJsonObject[0].array<JsonObject>("notes")
+
+        if (notesJsonArr == null) {
+            LOG.error("Failed to find note object arrau from JSON.")
+            return null
+        }
+        val noteObj = notesJsonArr[0]?.obj("note")
+
+        if (noteObj == null) {
+            LOG.error("Failed to identify expected note object from JSON.")
+            return null
+        }
+
+        specialNoteId = noteObj.long("id")
+        val commentString = noteObj.string("comment")
+
+        try {
+            return parseLong(commentString)
+        } catch (e: Exception) {
+            LOG.error("Failed to parse comment string [${commentString}].", e)
+            return null
+        }
+    }
+
     fun addTorrentTasks(items: List<RssItem>) {
-        checkvistService?.remote(fun(token) {
+        checkvistService.remote(fun(token) {
             for (item in items) {
                 val (request, response, result) = postTaskUrl.httpPost(listOf("token" to token, "task[content]" to item.title)).responseObject(JsonObjectDeserializer())
                 if (result is Result.Failure) {
@@ -94,5 +104,37 @@ class CheckvistTracker {
                 LOG.info("Successfully posted note for task[${taskId}].")
             }
         })
+    }
+
+    fun setLastUpdateTime(lastUpdateTime: Long) {
+        if (specialTaskId == null || specialNoteId == null) {
+            LOG.error("specialNoteId is null, need to call getLastUpdateTime() at least once before this method.")
+            return
+        }
+
+        checkvistService.remote(fun(token) {
+            val updateNoteUrl = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks/${specialTaskId}/comments/${specialNoteId}.json"
+            val (request, response, result) = updateNoteUrl.httpPut(listOf("token" to token, "comment[comment]" to lastUpdateTime)).response()
+            if (result is Result.Failure) {
+                LOG.error("Remote service PUT failed.", result.error.exception)
+            } else {
+                LOG.info("Last update time updated to [" + lastUpdateTime + "].")
+            }
+        })
+    }
+
+    fun processTasks(allTasks: JsonArray<JsonObject>) {
+        val toTorrentTasks = allTasks.filter { !"Last Uploaded by tormonk".equals(it.string("content")) && 1 == it.int("status") }
+        val jsch = JSch()
+        jsch.addIdentity("${System.getProperty("user.home")}/.ssh/id_rsa")
+        val session = jsch.getSession("101.100.161.164")
+        val execChannel: ChannelExec = session.openChannel("exec") as ChannelExec
+        execChannel.setErrStream(System.err)
+        execChannel.outputStream = System.out
+
+        for (toTorrentTask in toTorrentTasks) {
+            LOG.info("Sent torrent[${toTorrentTask.string("content")}] to home.")
+
+        }
     }
 }
