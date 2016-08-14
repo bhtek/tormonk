@@ -6,9 +6,9 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.*
 
-class CheckvistService(checklistId: Long) {
+class CheckvistService {
     companion object {
-        val LOG = LoggerFactory.getLogger(CheckvistService.javaClass)
+        val LOG = LoggerFactory.getLogger(CheckvistService::class.java)
         val baseUrl = "https://checkvist.com"
         val checklistBaseUrl = "${baseUrl}/checklists"
         // e.g. https://checkvist.com/auth/refresh_token.json?old_token=jX0MvhozWsWEsj&with_notes=true

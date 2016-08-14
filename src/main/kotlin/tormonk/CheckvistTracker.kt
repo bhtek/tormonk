@@ -19,7 +19,7 @@ class CheckvistTracker {
         var specialTaskId: Long? = null
         var specialNoteId: Long? = null
 
-        val checkvistService = CheckvistService(specialChecklistId)
+        val checkvistService = CheckvistService()
         val getTasksUrl = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks.json"
         val postTaskUrl = getTasksUrl
         val postNoteBaseUrl = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks"
