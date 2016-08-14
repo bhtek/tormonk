@@ -2,13 +2,11 @@ package tormonk
 
 import com.beust.klaxon.*
 import com.github.kittinunf.fuel.core.ResponseDeserializable
+import com.github.kittinunf.fuel.httpDelete
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.fuel.httpPost
 import com.github.kittinunf.fuel.httpPut
 import com.github.kittinunf.result.Result
-import com.jcraft.jsch.ChannelExec
-import com.jcraft.jsch.JSch
-import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.InputStream
@@ -62,7 +60,7 @@ class CheckvistTracker {
         val notesJsonArr = lastUploadedJsonObject[0].array<JsonObject>("notes")
 
         if (notesJsonArr == null) {
-            LOG.error("Failed to find note object arrau from JSON.")
+            LOG.error("Failed to find note object array from JSON.")
             return null
         }
         val noteObj = notesJsonArr[0]?.obj("note")
@@ -125,16 +123,36 @@ class CheckvistTracker {
 
     fun processTasks(allTasks: JsonArray<JsonObject>) {
         val toTorrentTasks = allTasks.filter { !"Last Uploaded by tormonk".equals(it.string("content")) && 1 == it.int("status") }
-        val jsch = JSch()
-        jsch.addIdentity("${System.getProperty("user.home")}/.ssh/id_rsa")
-        val session = jsch.getSession("101.100.161.164")
-        val execChannel: ChannelExec = session.openChannel("exec") as ChannelExec
-        execChannel.setErrStream(System.err)
-        execChannel.outputStream = System.out
 
         for (toTorrentTask in toTorrentTasks) {
-            LOG.info("Sent torrent[${toTorrentTask.string("content")}] to home.")
+            val notesJsonArr = toTorrentTask.array<JsonObject>("notes")
 
+            if (notesJsonArr == null) {
+                LOG.error("Failed to find note object array from JSON.")
+                return
+            }
+            val noteObj = notesJsonArr[0]?.obj("note")
+
+            if (noteObj == null) {
+                LOG.error("Failed to identify expected note object from JSON.")
+                return
+            }
+
+            val link = noteObj.string("comment")
+
+            // ssh 101.100.161.164 transmission-remote -n 'transmission:password' -w /mnt/nas/Videos/ -a "magnet:?xt=urn:btih:29238E90C2D155B54540B426B0B2F9E5045DC8BB"
+            Runtime.getRuntime().exec("ssh 101.100.161.164 transmission-remote -n 'transmission:password' -w /mnt/nas/Videos/ -a '${link}'")
+            LOG.info("Sent torrent[${toTorrentTask.string("content")}] to home.")
         }
+
+        checkvistService.remote(fun(token) {
+            for (toTorrentTask in toTorrentTasks) {
+                val taskId = toTorrentTask.int("id")
+                val (request, response, result) = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks/${taskId}.json".httpDelete(listOf("token" to token)).response()
+                if (result is Result.Failure) {
+                    LOG.error("Failed to delete task for [${toTorrentTask.string("content")}].", result.error.exception)
+                }
+            }
+        })
     }
 }
