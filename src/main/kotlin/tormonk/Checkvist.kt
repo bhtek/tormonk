@@ -47,7 +47,7 @@ class CheckvistService {
     }
 
     fun <T> remote(body: (String) -> T): T {
-        if (System.currentTimeMillis() - lastActivity > tokenExpiry) {
+        if (System.currentTimeMillis() - tokenFile.lastModified() > tokenExpiry) {
             token = refreshToken()
             tokenFile.writeText(token)
         }
