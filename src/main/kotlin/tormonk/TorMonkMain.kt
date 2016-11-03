@@ -31,7 +31,7 @@ class Scheduled {
     @Resource lateinit var checkvistTracker: CheckvistTracker
     @Resource lateinit var showRss: ShowRss
 
-    @Scheduled(cron = "0 23,42 * * * *")
+    @Scheduled(cron = "0 2,11,23,33,42,52 * * * *")
     fun checkForTorrents() {
         LOG.info("Begin check.")
 
