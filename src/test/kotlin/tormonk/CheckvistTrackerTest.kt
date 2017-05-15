@@ -9,9 +9,11 @@ import org.apache.commons.io.IOUtils
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.CoreMatchers.notNullValue
 import org.junit.Assert.assertThat
+import org.junit.Ignore
 import org.junit.Test
 
 class CheckvistTrackerTest {
+    @Ignore
     @Test
     fun getLastUpdatedTime_simple() {
         FuelManager.instance.client = object : Client {
@@ -27,6 +29,7 @@ class CheckvistTrackerTest {
         Fuel.testMode()
 
         val tracker = CheckvistTracker()
+        tracker.checkvistService = CheckvistService()
         val allTasks = tracker.getAllTasks()
         assertThat(allTasks, notNullValue())
         assertThat(tracker.getLastUpdateTime(allTasks!!), equalTo(123L))

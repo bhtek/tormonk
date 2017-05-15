@@ -8,6 +8,7 @@ import com.github.kittinunf.fuel.httpPost
 import com.github.kittinunf.fuel.httpPut
 import com.github.kittinunf.result.Result
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.io.InputStream
 import java.lang.Long.parseLong
@@ -19,12 +20,14 @@ class CheckvistTracker {
         var specialTaskId: Long? = null
         var specialNoteId: Long? = null
 
-        val checkvistService = CheckvistService()
         val getTasksUrl = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks.json"
         val postTaskUrl = getTasksUrl
         val postNoteBaseUrl = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks"
         val LOG = LoggerFactory.getLogger(CheckvistTracker::class.java.name)
     }
+
+    @Autowired
+    lateinit var checkvistService: CheckvistService
 
     class JsonArrayDeserializer : ResponseDeserializable<JsonArray<JsonObject>> {
         override fun deserialize(inputStream: InputStream) = Parser().parse(inputStream) as JsonArray<JsonObject>
@@ -131,7 +134,8 @@ class CheckvistTracker {
                 LOG.error("Failed to find note object array from JSON.")
                 return
             }
-            val noteObj = notesJsonArr[0]?.obj("note")
+
+            val noteObj = notesJsonArr[0]
 
             if (noteObj == null) {
                 LOG.error("Failed to identify expected note object from JSON.")
