@@ -66,7 +66,7 @@ class CheckvistTracker {
             LOG.error("Failed to find note object array from JSON.")
             return null
         }
-        val noteObj = notesJsonArr[0]?.obj("note")
+        val noteObj = notesJsonArr[0]
 
         if (noteObj == null) {
             LOG.error("Failed to identify expected note object from JSON.")
