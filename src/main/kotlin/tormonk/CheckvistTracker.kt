@@ -145,8 +145,10 @@ class CheckvistTracker {
             val link = noteObj.string("comment")
 
             // ssh 101.100.161.164 transmission-remote -n 'transmission:password' -w /mnt/nas/Videos/ -a "magnet:?xt=urn:btih:29238E90C2D155B54540B426B0B2F9E5045DC8BB"
-            Runtime.getRuntime().exec("transmission-remote -n 'transmission:password' -w /mnt/nas/Videos/ -a '${link}'")
-            LOG.info("Sent torrent[${toTorrentTask.string("content")}] w/ magnet[$link] to home.")
+            val process = Runtime.getRuntime().exec("transmission-remote -n 'transmission:password' -w /mnt/nas/Videos/ -a '${link}'")
+            val exitCode = process.waitFor()
+
+            LOG.info("Sent torrent[${toTorrentTask.string("content")}] w/ magnet[$link] to home w/ exit code of $exitCode.")
         }
 
         checkvistService.remote(fun(token) {
