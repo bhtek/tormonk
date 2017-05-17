@@ -1,5 +1,5 @@
 buildscript {
-    ext.kotlin_version = '1.1.2-2' // Required for Kotlin integration
+    ext.kotlin_version = '1.1.2-3' // Required for Kotlin integration
     ext.spring_boot_version = '1.5.1.RELEASE'
     repositories {
         jcenter()
@@ -10,7 +10,6 @@ buildscript {
     }
 }
 
-apply plugin: 'eclipse'
 apply plugin: 'idea'
 apply plugin: 'kotlin' // Required for Kotlin integration
 apply plugin: 'org.springframework.boot'
@@ -18,7 +17,7 @@ apply plugin: 'application'
 
 jar {
     baseName = 'tormonk'
-    version = '0.1.0'
+    version = '0.2.0'
 }
 
 repositories {
@@ -31,14 +30,12 @@ dependencies {
     compile 'org.jetbrains.kotlin:kotlin-reflect'
     compile 'org.springframework.boot:spring-boot-starter-web'
     compile 'com.github.kittinunf.fuel:fuel:1.7.0' //for JVM
-    // https://mvnrepository.com/artifact/joda-time/joda-time
     compile group: 'joda-time', name: 'joda-time', version: '2.9.4'
     compile 'com.beust:klaxon:0.24'
     compile "org.jonnyzzz.kotlin.xml.bind:jdom:0.1.9"
 
     testCompile 'junit:junit'
     testCompile 'org.mockito:mockito-core:1.10.19'
-    // https://mvnrepository.com/artifact/commons-io/commons-io
     testCompile group: 'commons-io', name: 'commons-io', version: '2.5'
 }
 
