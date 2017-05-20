@@ -1,13 +1,19 @@
 package tormonk
 
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.PropertySource
+import org.springframework.http.HttpStatus
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import org.springframework.stereotype.Controller
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestMethod
+import org.springframework.web.bind.annotation.ResponseStatus
 import javax.annotation.Resource
 
 @SpringBootApplication
@@ -45,5 +51,16 @@ class Scheduled {
         if (channel.items!!.size > 0) {
             checkvistTracker.setLastUpdateTime(channel.items!![0].pubDate!!.millis)
         }
+    }
+}
+
+@Controller
+open class TorController {
+    @Autowired lateinit var scheduled: tormonk.Scheduled
+
+    @RequestMapping("/track", method = arrayOf(RequestMethod.POST))
+    @ResponseStatus(value = HttpStatus.OK)
+    open fun trackNow() {
+        scheduled.checkForTorrents()
     }
 }

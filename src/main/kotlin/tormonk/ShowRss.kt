@@ -34,7 +34,7 @@ class ShowRss {
     }
 
     fun getNewItems(lastUpdatedTime: Long): RssChannel {
-        val (req, res, result) = SHOWRSS_URL.httpGet().responseObject(RssDeserializer())
+        val (_, _, result) = SHOWRSS_URL.httpGet().responseObject(RssDeserializer())
         if (result is Result.Failure) {
             throw RuntimeException("Failed to retrieve from showRss using ${SHOWRSS_URL}.", result.error.exception)
         }

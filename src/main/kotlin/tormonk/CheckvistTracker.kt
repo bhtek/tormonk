@@ -30,6 +30,7 @@ class CheckvistTracker {
     lateinit var checkvistService: CheckvistService
 
     class JsonArrayDeserializer : ResponseDeserializable<JsonArray<JsonObject>> {
+        @Suppress("UNCHECKED_CAST")
         override fun deserialize(inputStream: InputStream) = Parser().parse(inputStream) as JsonArray<JsonObject>
     }
 
@@ -39,7 +40,7 @@ class CheckvistTracker {
 
     fun getAllTasks(): JsonArray<JsonObject>? {
         return checkvistService.remote(fun(token): JsonArray<JsonObject>? {
-            val (request, response, result) = getTasksUrl.httpGet(listOf("token" to token, "with_notes" to true)).responseObject(JsonArrayDeserializer())
+            val (_, _, result) = getTasksUrl.httpGet(listOf("token" to token, "with_notes" to true)).responseObject(JsonArrayDeserializer())
 
             if (result is Result.Failure) {
                 LOG.error("Remote service GET [$getTasksUrl] failed.", result.error.exception)
@@ -66,7 +67,7 @@ class CheckvistTracker {
             LOG.error("Failed to find note object array from JSON.")
             return null
         }
-        val noteObj = notesJsonArr[0]
+        val noteObj = notesJsonArr.getOrNull(0)
 
         if (noteObj == null) {
             LOG.error("Failed to identify expected note object from JSON.")
@@ -87,7 +88,7 @@ class CheckvistTracker {
     fun addTorrentTasks(items: List<RssItem>) {
         checkvistService.remote(fun(token) {
             for (item in items) {
-                val (request, response, result) = postTaskUrl.httpPost(listOf("token" to token, "task[content]" to item.title)).responseObject(JsonObjectDeserializer())
+                val (_, _, result) = postTaskUrl.httpPost(listOf("token" to token, "task[content]" to item.title)).responseObject(JsonObjectDeserializer())
                 if (result is Result.Failure) {
                     LOG.error("Remote service POST [$getTasksUrl] failed.", result.error.exception)
                     return
@@ -95,9 +96,9 @@ class CheckvistTracker {
 
                 val taskJson: JsonObject = result.get()
                 val taskId = taskJson.int("id")
-                LOG.info("Successfully posted task[${taskId}] for title[${item.title}] and [${item.pubDate?.millis}].")
+                LOG.info("Successfully posted task[${taskId}] for title[${item.title}] at pub date [${item.pubDate?.millis}].")
 
-                val (nRequest, nResponse, nResult) = "${postNoteBaseUrl}/${taskId}/comments.json".httpPost(listOf("token" to token, "comment[comment]" to item.link)).responseString()
+                val (_, _, nResult) = "${postNoteBaseUrl}/${taskId}/comments.json".httpPost(listOf("token" to token, "comment[comment]" to item.link)).responseString()
                 if (nResult is Result.Failure) {
                     LOG.error("Remote service POST for note of taskId[${taskId}] failed.", nResult.error.exception)
                     return
@@ -115,7 +116,7 @@ class CheckvistTracker {
 
         checkvistService.remote(fun(token) {
             val updateNoteUrl = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks/${specialTaskId}/comments/${specialNoteId}.json"
-            val (request, response, result) = updateNoteUrl.httpPut(listOf("token" to token, "comment[comment]" to lastUpdateTime)).response()
+            val (_, _, result) = updateNoteUrl.httpPut(listOf("token" to token, "comment[comment]" to lastUpdateTime)).response()
             if (result is Result.Failure) {
                 LOG.error("Remote service PUT failed.", result.error.exception)
             } else {
@@ -135,7 +136,7 @@ class CheckvistTracker {
                 return
             }
 
-            val noteObj = notesJsonArr[0]
+            val noteObj = notesJsonArr.getOrNull(0)
 
             if (noteObj == null) {
                 LOG.error("Failed to identify expected note object from JSON.")
@@ -145,7 +146,7 @@ class CheckvistTracker {
             val link = noteObj.string("comment")
 
             // ssh 101.100.161.164 transmission-remote -n 'transmission:password' -w /mnt/nas/Videos/ -a "magnet:?xt=urn:btih:29238E90C2D155B54540B426B0B2F9E5045DC8BB"
-            val process = Runtime.getRuntime().exec("transmission-remote -n 'transmission:password' -w /mnt/nas/Videos/ -a '${link}'")
+            val process = Runtime.getRuntime().exec(arrayOf("transmission-remote", "-n", "transmission:password", "-w", "/mnt/nas/Videos/", "-a", link))
             val exitCode = process.waitFor()
 
             LOG.info("Sent torrent[${toTorrentTask.string("content")}] w/ magnet[$link] to home w/ exit code of $exitCode.")
@@ -154,7 +155,7 @@ class CheckvistTracker {
         checkvistService.remote(fun(token) {
             for (toTorrentTask in toTorrentTasks) {
                 val taskId = toTorrentTask.int("id")
-                val (request, response, result) = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks/${taskId}.json".httpDelete(listOf("token" to token)).response()
+                val (_, _, result) = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks/${taskId}.json".httpDelete(listOf("token" to token)).response()
                 if (result is Result.Failure) {
                     LOG.error("Failed to delete task for [${toTorrentTask.string("content")}].", result.error.exception)
                 }
