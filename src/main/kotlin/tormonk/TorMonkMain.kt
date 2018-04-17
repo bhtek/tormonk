@@ -23,15 +23,17 @@ import javax.annotation.Resource
 open class TorMonkApplication {
     companion object {
         @JvmStatic fun main(args: Array<String>) {
-            SpringApplication.run(TorMonkApplication::class.java, *args)
+            val app = SpringApplication.run(TorMonkApplication::class.java, *args)
+            val tjc: TorrentJobContainer = app.getBean(TorrentJobContainer::class.java)
+            tjc.checkForTorrents()
         }
     }
 }
 
 @Component
-class Scheduled {
+class TorrentJobContainer {
     companion object {
-        val LOG = LoggerFactory.getLogger(tormonk.Scheduled::class.java.name)
+        val LOG = LoggerFactory.getLogger(tormonk.TorrentJobContainer::class.java.name)
     }
 
     @Resource lateinit var checkvistTracker: CheckvistTracker
@@ -56,11 +58,11 @@ class Scheduled {
 
 @Controller
 open class TorController {
-    @Autowired lateinit var scheduled: tormonk.Scheduled
+    @Autowired lateinit var tjc: tormonk.TorrentJobContainer
 
     @RequestMapping("/track", method = arrayOf(RequestMethod.POST))
     @ResponseStatus(value = HttpStatus.OK)
     open fun trackNow() {
-        scheduled.checkForTorrents()
+        tjc.checkForTorrents()
     }
 }
