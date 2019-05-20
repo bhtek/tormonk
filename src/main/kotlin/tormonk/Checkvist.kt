@@ -38,7 +38,7 @@ open class CheckvistService : InitializingBean {
 
 
     fun refreshToken(): String {
-        val (_, _, result) = "${refreshTokenBaseUrl}".httpGet(Arrays.asList("old_token" to token)).responseString()
+        val (_, _, result) = refreshTokenBaseUrl.httpGet(Arrays.asList("old_token" to token)).responseString()
         if (result is Result.Failure) {
             throw RuntimeException("Refresh token failed.", result.error)
         }

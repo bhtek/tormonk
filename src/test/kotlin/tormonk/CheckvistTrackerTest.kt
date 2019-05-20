@@ -1,40 +1,29 @@
 package tormonk
 
-import com.github.kittinunf.fuel.Fuel
 import com.github.kittinunf.fuel.core.Client
 import com.github.kittinunf.fuel.core.FuelManager
 import com.github.kittinunf.fuel.core.Request
 import com.github.kittinunf.fuel.core.Response
-import org.apache.commons.io.IOUtils
+import com.github.kittinunf.fuel.core.requests.DefaultBody
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.CoreMatchers.notNullValue
 import org.junit.Assert.assertThat
-import org.junit.Ignore
 import org.junit.Test
 
 class CheckvistTrackerTest {
-    @Ignore
     @Test
     fun getLastUpdatedTime_simple() {
         FuelManager.instance.client = object : Client {
             override fun executeRequest(request: Request): Response {
-                return Response().apply {
-                    url = request.url
-                    httpStatusCode = 200
-                    data = IOUtils.toByteArray(javaClass.getResourceAsStream("/getLastUpdatedTime_simple.json"))
-                }
+                return Response(request.url, 200, body = DefaultBody({ javaClass.getResourceAsStream("/getLastUpdatedTime_simple.json") }))
             }
         }
 
-        Fuel.testMode()
-
         val tracker = CheckvistTracker()
         tracker.checkvistService = CheckvistService()
+        tracker.checkvistService.afterPropertiesSet()
         val allTasks = tracker.getAllTasks()
         assertThat(allTasks, notNullValue())
         assertThat(tracker.getLastUpdateTime(allTasks!!), equalTo(123L))
     }
-}
-
-fun main(args: Array<String>) {
 }

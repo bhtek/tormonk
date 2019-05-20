@@ -1,6 +1,12 @@
 package tormonk
 
-import com.beust.klaxon.*
+import com.beust.klaxon.JsonArray
+import com.beust.klaxon.JsonObject
+import com.beust.klaxon.Parser
+import com.beust.klaxon.array
+import com.beust.klaxon.int
+import com.beust.klaxon.long
+import com.beust.klaxon.string
 import com.github.kittinunf.fuel.core.ResponseDeserializable
 import com.github.kittinunf.fuel.httpDelete
 import com.github.kittinunf.fuel.httpGet
@@ -86,12 +92,12 @@ class CheckvistTracker {
     }
 
     fun addTorrentTasks(items: List<RssItem>) {
-        checkvistService.remote(fun(token) {
+        checkvistService.remote { token ->
             for (item in items) {
                 val (_, _, result) = postTaskUrl.httpPost(listOf("token" to token, "task[content]" to item.title)).responseObject(JsonObjectDeserializer())
                 if (result is Result.Failure) {
                     LOG.error("Remote service POST [$getTasksUrl] failed.", result.error.exception)
-                    return
+                    return@remote
                 }
 
                 val taskJson: JsonObject = result.get()
@@ -101,11 +107,11 @@ class CheckvistTracker {
                 val (_, _, nResult) = "${postNoteBaseUrl}/${taskId}/comments.json".httpPost(listOf("token" to token, "comment[comment]" to item.link)).responseString()
                 if (nResult is Result.Failure) {
                     LOG.error("Remote service POST for note of taskId[${taskId}] failed.", nResult.error.exception)
-                    return
+                    return@remote
                 }
                 LOG.info("Successfully posted note for task[${taskId}].")
             }
-        })
+        }
     }
 
     fun setLastUpdateTime(lastUpdateTime: Long) {
@@ -114,7 +120,7 @@ class CheckvistTracker {
             return
         }
 
-        checkvistService.remote(fun(token) {
+        checkvistService.remote { token ->
             val updateNoteUrl = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks/${specialTaskId}/comments/${specialNoteId}.json"
             val (_, _, result) = updateNoteUrl.httpPut(listOf("token" to token, "comment[comment]" to lastUpdateTime)).response()
             if (result is Result.Failure) {
@@ -122,7 +128,7 @@ class CheckvistTracker {
             } else {
                 LOG.info("Last update time updated to [" + lastUpdateTime + "].")
             }
-        })
+        }
     }
 
     fun processTasks(allTasks: JsonArray<JsonObject>) {
@@ -152,7 +158,7 @@ class CheckvistTracker {
             LOG.info("Sent torrent[${toTorrentTask.string("content")}] w/ magnet[$link] to home w/ exit code of $exitCode.")
         }
 
-        checkvistService.remote(fun(token) {
+        checkvistService.remote { token ->
             for (toTorrentTask in toTorrentTasks) {
                 val taskId = toTorrentTask.int("id")
                 val (_, _, result) = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks/${taskId}.json".httpDelete(listOf("token" to token)).response()
@@ -160,6 +166,6 @@ class CheckvistTracker {
                     LOG.error("Failed to delete task for [${toTorrentTask.string("content")}].", result.error.exception)
                 }
             }
-        })
+        }
     }
 }
