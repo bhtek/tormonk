@@ -3,16 +3,13 @@ package tormonk
 import com.beust.klaxon.JsonArray
 import com.beust.klaxon.JsonObject
 import com.beust.klaxon.Parser
-import com.beust.klaxon.array
-import com.beust.klaxon.int
-import com.beust.klaxon.long
-import com.beust.klaxon.string
 import com.github.kittinunf.fuel.core.ResponseDeserializable
 import com.github.kittinunf.fuel.httpDelete
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.fuel.httpPost
 import com.github.kittinunf.fuel.httpPut
 import com.github.kittinunf.result.Result
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -22,14 +19,14 @@ import java.lang.Long.parseLong
 @Component
 class CheckvistTracker {
     companion object {
-        val specialChecklistId: Long = 569126
+        const val specialChecklistId: Long = 569126
         var specialTaskId: Long? = null
         var specialNoteId: Long? = null
 
         val getTasksUrl = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks.json"
         val postTaskUrl = getTasksUrl
         val postNoteBaseUrl = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks"
-        val LOG = LoggerFactory.getLogger(CheckvistTracker::class.java.name)
+        val LOG: Logger = LoggerFactory.getLogger(CheckvistTracker::class.java.name)
     }
 
     @Autowired
@@ -37,11 +34,11 @@ class CheckvistTracker {
 
     class JsonArrayDeserializer : ResponseDeserializable<JsonArray<JsonObject>> {
         @Suppress("UNCHECKED_CAST")
-        override fun deserialize(inputStream: InputStream) = Parser().parse(inputStream) as JsonArray<JsonObject>
+        override fun deserialize(inputStream: InputStream) = Parser.default().parse(inputStream) as JsonArray<JsonObject>
     }
 
     class JsonObjectDeserializer : ResponseDeserializable<JsonObject> {
-        override fun deserialize(inputStream: InputStream) = Parser().parse(inputStream) as JsonObject
+        override fun deserialize(inputStream: InputStream) = Parser.default().parse(inputStream) as JsonObject
     }
 
     fun getAllTasks(): JsonArray<JsonObject>? {
@@ -58,10 +55,10 @@ class CheckvistTracker {
 
     fun getLastUpdateTime(jsonArr: JsonArray<JsonObject>): Long? {
         val lastUploadedJsonObject = jsonArr.filter {
-            "Last Uploaded by tormonk".equals(it.string("content"))
+            "Last Uploaded by tormonk" == it.string("content")
         }
 
-        if (lastUploadedJsonObject.size < 1) {
+        if (lastUploadedJsonObject.isEmpty()) {
             LOG.error("Failed to load proper task object from JSON.")
             return null
         }
@@ -83,11 +80,11 @@ class CheckvistTracker {
         specialNoteId = noteObj.long("id")
         val commentString = noteObj.string("comment")
 
-        try {
-            return parseLong(commentString)
+        return try {
+            parseLong(commentString)
         } catch (e: Exception) {
             LOG.error("Failed to parse comment string [${commentString}].", e)
-            return null
+            null
         }
     }
 
@@ -104,7 +101,8 @@ class CheckvistTracker {
                 val taskId = taskJson.int("id")
                 LOG.info("Successfully posted task[${taskId}] for title[${item.title}] at pub date [${item.pubDate?.millis}].")
 
-                val (_, _, nResult) = "${postNoteBaseUrl}/${taskId}/comments.json".httpPost(listOf("token" to token, "comment[comment]" to item.link)).responseString()
+                val (_, _, nResult) = "${postNoteBaseUrl}/${taskId}/comments.json".httpPost(listOf("token" to token, "comment[comment]" to item.link))
+                    .responseString()
                 if (nResult is Result.Failure) {
                     LOG.error("Remote service POST for note of taskId[${taskId}] failed.", nResult.error.exception)
                     return@remote
@@ -126,13 +124,13 @@ class CheckvistTracker {
             if (result is Result.Failure) {
                 LOG.error("Remote service PUT failed.", result.error.exception)
             } else {
-                LOG.info("Last update time updated to [" + lastUpdateTime + "].")
+                LOG.info("Last update time updated to [$lastUpdateTime].")
             }
         }
     }
 
     fun processTasks(allTasks: JsonArray<JsonObject>) {
-        val toTorrentTasks = allTasks.filter { !"Last Uploaded by tormonk".equals(it.string("content")) && 1 == it.int("status") }
+        val toTorrentTasks = allTasks.filter { "Last Uploaded by tormonk" != it.string("content") && 1 == it.int("status") }
 
         for (toTorrentTask in toTorrentTasks) {
             val notesJsonArr = toTorrentTask.array<JsonObject>("notes")
@@ -161,7 +159,8 @@ class CheckvistTracker {
         checkvistService.remote { token ->
             for (toTorrentTask in toTorrentTasks) {
                 val taskId = toTorrentTask.int("id")
-                val (_, _, result) = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks/${taskId}.json".httpDelete(listOf("token" to token)).response()
+                val (_, _, result) = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks/${taskId}.json".httpDelete(listOf("token" to token))
+                    .response()
                 if (result is Result.Failure) {
                     LOG.error("Failed to delete task for [${toTorrentTask.string("content")}].", result.error.exception)
                 }
