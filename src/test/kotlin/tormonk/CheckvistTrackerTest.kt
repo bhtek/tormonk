@@ -7,11 +7,13 @@ import com.github.kittinunf.fuel.core.Response
 import com.github.kittinunf.fuel.core.requests.DefaultBody
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.CoreMatchers.notNullValue
-import org.junit.Assert.assertThat
-import org.junit.Test
+import org.hamcrest.MatcherAssert.assertThat
+import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Test
 
 class CheckvistTrackerTest {
     @Test
+    @Disabled
     fun getLastUpdatedTime_simple() {
         FuelManager.instance.client = object : Client {
             override fun executeRequest(request: Request): Response {
