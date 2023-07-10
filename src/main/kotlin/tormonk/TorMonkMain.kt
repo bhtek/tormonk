@@ -13,7 +13,6 @@ import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.ResponseStatus
-import javax.annotation.Resource
 
 @SpringBootApplication
 @EnableScheduling
@@ -30,16 +29,13 @@ open class TorMonkApplication {
 }
 
 @Component
-class TorrentJobContainer {
+class TorrentJobContainer(
+    private val checkvistTracker: CheckvistTracker,
+    private val showRss: ShowRss,
+) {
     companion object {
-        val LOG = LoggerFactory.getLogger(tormonk.TorrentJobContainer::class.java.name)!!
+        val LOG = LoggerFactory.getLogger(TorrentJobContainer::class.java.name)!!
     }
-
-    @Resource
-    lateinit var checkvistTracker: CheckvistTracker
-
-    @Resource
-    lateinit var showRss: ShowRss
 
     @Scheduled(cron = "0 2,11,23,33,42,52 * * * *")
     fun checkForTorrents() {
@@ -62,7 +58,7 @@ class TorrentJobContainer {
 @Controller
 open class TorController {
     @Autowired
-    lateinit var tjc: tormonk.TorrentJobContainer
+    lateinit var tjc: TorrentJobContainer
 
     @RequestMapping("/track", method = arrayOf(RequestMethod.POST))
     @ResponseStatus(value = HttpStatus.OK)
