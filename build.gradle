@@ -24,6 +24,12 @@ jar {
     version = '1.0.0'
 }
 
+kotlin {
+  jvmToolchain {
+    languageVersion.set(JavaLanguageVersion.of("19"))
+  }
+}
+
 repositories {
     jcenter()
     maven { url "https://dl.bintray.com/jonnyzzz/maven" }
