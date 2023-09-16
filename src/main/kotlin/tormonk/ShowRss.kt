@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.util.StringUtils
 import java.io.InputStream
+import java.util.*
 
 @Component
 class ShowRss {
@@ -58,7 +59,7 @@ class RssChannel {
 
 class RssItem {
     companion object {
-        val PUB_DATE_FORMAT = DateTimeFormat.forPattern("E, dd MMM yyyy HH:mm:ss Z")
+        val PUB_DATE_FORMAT = DateTimeFormat.forPattern("E, dd MMM yyyy HH:mm:ss Z").withLocale(Locale.ENGLISH)
     }
 
     var title by JXML / "title" / XText
