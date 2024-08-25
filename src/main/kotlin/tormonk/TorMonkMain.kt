@@ -45,12 +45,12 @@ class TorrentJobContainer(
         val lastUpdateTime = checkvistTracker.getLastUpdateTime(allTasks) ?: return
         checkvistTracker.processTasks(allTasks)
 
-        val channel = showRss.getNewItems(lastUpdateTime)
-        LOG.info("Check done, found [${channel.items?.size ?: 0}] item(s).")
+        val newEntries = showRss.getNewItems(lastUpdateTime)
+        LOG.info("Check done, found [${newEntries.size}] item(s).")
 
-        if (channel.items!!.isNotEmpty()) {
-            checkvistTracker.addTorrentTasks(channel.items!!)
-            checkvistTracker.setLastUpdateTime(channel.items!![0].pubDate!!.millis)
+        if (newEntries.isNotEmpty()) {
+            checkvistTracker.addTorrentTasks(newEntries)
+            checkvistTracker.setLastUpdateTime(newEntries.first().publishedDate.time)
         }
     }
 }

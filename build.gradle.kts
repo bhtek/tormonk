@@ -17,16 +17,17 @@ plugins {
 
 repositories {
     mavenCentral()
-    jcenter()
+//    jcenter()
 }
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
+
+    implementation("com.beust:klaxon:5.6")
     implementation("com.github.kittinunf.fuel:fuel:2.3.1")
+    implementation("com.rometools:rome:2.1.0")
     implementation("javax.annotation:javax.annotation-api:1.3.2")
     implementation("joda-time:joda-time:2.10.2")
-    implementation("com.beust:klaxon:5.6")
-    implementation("org.jonnyzzz.kotlin.xml.bind:jdom:0.2.0")
 
     testImplementation("org.hamcrest:hamcrest-junit:2.0.0.0")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$jupiterVersion")
