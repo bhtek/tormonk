@@ -13,7 +13,7 @@ import java.net.http.HttpResponse
 class ShowRss {
     companion object {
         val SHOWRSS_URL =
-            "http://showrss.info/user/72839.rss?magnets=true&namespaces=false&name=null&quality=null&re=null"
+            "https://showrss.info/user/72839.rss?magnets=true&namespaces=false&name=null&quality=null&re=null"
         val CLIENT = HttpClient.newHttpClient()
     }
 
