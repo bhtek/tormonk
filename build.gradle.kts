@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 apply(from = "./versions.gradle.kts")
 val jupiterVersion: String by extra
@@ -9,15 +10,25 @@ val ktor_version = "2.2.4"
 val spring_boot_version = "3.1.0"
 
 plugins {
-    kotlin("jvm") version "1.9.0"
+    kotlin("jvm") version "2.3.20"
 
-    id("org.springframework.boot") version "3.1.0"
-    id("io.spring.dependency-management") version "1.1.0"
+    id("org.springframework.boot") version "4.0.3"
+    id("io.spring.dependency-management") version "1.1.7"
 }
 
 repositories {
     mavenCentral()
 //    jcenter()
+}
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
+
+kotlin {
+    jvmToolchain(21)
 }
 
 dependencies {
@@ -32,6 +43,7 @@ dependencies {
     testImplementation("org.hamcrest:hamcrest-junit:2.0.0.0")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$jupiterVersion")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$jupiterVersion")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("org.mockito:mockito-core:1.10.19")
     testImplementation("commons-io:commons-io:2.13.0")
 }
@@ -41,8 +53,8 @@ tasks.test {
 }
 
 tasks.withType<KotlinCompile>() {
-    kotlinOptions {
-        jvmTarget = "19"
-        // freeCompilerArgs += listOf("-Xcontext-receivers", "-Xbackend-threads 0")
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_21)
+        // freeCompilerArgs.addAll("-Xcontext-receivers", "-Xbackend-threads", "0")
     }
 }

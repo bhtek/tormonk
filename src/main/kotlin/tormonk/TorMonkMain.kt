@@ -49,8 +49,11 @@ class TorrentJobContainer(
         LOG.info("Check done, found [${newEntries.size}] item(s).")
 
         if (newEntries.isNotEmpty()) {
-            checkvistTracker.addTorrentTasks(newEntries)
-            checkvistTracker.setLastUpdateTime(newEntries.first().publishedDate.time)
+            val enqueueResults = checkvistTracker.addTorrentTasks(newEntries)
+            val nextLastUpdateTime = CheckvistTracker.calculateLastUpdateTime(lastUpdateTime, enqueueResults)
+            if (nextLastUpdateTime > lastUpdateTime) {
+                checkvistTracker.setLastUpdateTime(nextLastUpdateTime)
+            }
         }
     }
 }

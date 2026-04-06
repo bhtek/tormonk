@@ -20,6 +20,8 @@ import java.lang.Long.parseLong
 @Component
 class CheckvistTracker {
     companion object {
+        data class EnqueueResult(val timestamp: Long, val success: Boolean)
+
         const val specialChecklistId: Long = 569126
         var specialTaskId: Long? = null
         var specialNoteId: Long? = null
@@ -28,6 +30,25 @@ class CheckvistTracker {
         val postTaskUrl = getTasksUrl
         val postNoteBaseUrl = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks"
         val LOG: Logger = LoggerFactory.getLogger(CheckvistTracker::class.java.name)
+
+        fun calculateLastUpdateTime(previousLastUpdateTime: Long, enqueueResults: List<EnqueueResult>): Long {
+            var nextLastUpdateTime = previousLastUpdateTime
+
+            for ((timestamp, group) in enqueueResults.groupBy { it.timestamp }.toSortedMap()) {
+                if (timestamp <= previousLastUpdateTime) {
+                    continue
+                }
+
+                if (group.all { it.success }) {
+                    nextLastUpdateTime = timestamp
+                    continue
+                }
+
+                break
+            }
+
+            return nextLastUpdateTime
+        }
     }
 
     @Autowired
@@ -91,19 +112,20 @@ class CheckvistTracker {
         }
     }
 
-    fun addTorrentTasks(items: List<SyndEntry>) {
-        checkvistService.remote { token ->
-            for (item in items) {
+    fun addTorrentTasks(items: List<SyndEntry>): List<EnqueueResult> {
+        return checkvistService.remote { token ->
+            items.map { item ->
+                val timestamp = item.publishedDate.time
                 val (_, _, result) = postTaskUrl.httpPost(listOf("token" to token, "task[content]" to item.title))
                     .responseObject(JsonObjectDeserializer())
                 if (result is Result.Failure) {
                     LOG.error("Remote service POST [$getTasksUrl] failed.", result.error.exception)
-                    return@remote
+                    return@map EnqueueResult(timestamp, false)
                 }
 
                 val taskJson: JsonObject = result.get()
                 val taskId = taskJson.int("id")
-                LOG.info("Successfully posted task[${taskId}] for title[${item.title}] at pub date [${item.publishedDate.time}].")
+                LOG.info("Successfully posted task[${taskId}] for title[${item.title}] at pub date [$timestamp].")
 
                 val (_, _, nResult) = "${postNoteBaseUrl}/${taskId}/comments.json".httpPost(
                     listOf(
@@ -114,9 +136,10 @@ class CheckvistTracker {
                     .responseString()
                 if (nResult is Result.Failure) {
                     LOG.error("Remote service POST for note of taskId[${taskId}] failed.", nResult.error.exception)
-                    return@remote
+                    return@map EnqueueResult(timestamp, false)
                 }
                 LOG.info("Successfully posted note for task[${taskId}].")
+                EnqueueResult(timestamp, true)
             }
         }
     }
@@ -140,47 +163,69 @@ class CheckvistTracker {
         }
     }
 
-    fun processTasks(allTasks: JsonArray<JsonObject>) {
+    fun processTasks(
+        allTasks: JsonArray<JsonObject>,
+        sendTorrent: (String) -> Int = { link ->
+            val process =
+                Runtime.getRuntime().exec(arrayOf("transmission-remote", "-n", "transmission:transmission", "-a", link))
+            process.waitFor()
+        },
+        deleteTask: ((Int) -> Unit)? = null
+    ) {
         val toTorrentTasks = allTasks
             .filter { task ->
                 task.string("content") != "Last Uploaded by tormonk"
                         && task.int("status") == 1
             }
 
+        val successfulTaskIds = mutableListOf<Int>()
         for (toTorrentTask in toTorrentTasks) {
             val notesJsonArr = toTorrentTask.array<JsonObject>("notes")
 
             if (notesJsonArr == null) {
                 LOG.error("Failed to find note object array from JSON.")
-                return
+                continue
             }
 
             val noteObj = notesJsonArr.getOrNull(0)
 
             if (noteObj == null) {
                 LOG.error("Failed to identify expected note object from JSON.")
-                return
+                continue
             }
 
             val link = noteObj.string("comment")
+            if (link == null) {
+                LOG.error("Failed to identify expected magnet link from JSON.")
+                continue
+            }
 
-            // ssh 101.100.161.164 transmission-remote -n 'transmission:password' -w /mnt/nas/Videos/ -a "magnet:?xt=urn:btih:29238E90C2D155B54540B426B0B2F9E5045DC8BB"
-            val process =
-                Runtime.getRuntime().exec(arrayOf("transmission-remote", "-n", "transmission:transmission", "-a", link))
-            val exitCode = process.waitFor()
+            val exitCode = sendTorrent(link)
 
             LOG.info("Sent torrent[${toTorrentTask.string("content")}] w/ magnet[$link] to home w/ exit code of $exitCode.")
+            if (exitCode == 0) {
+                val taskId = toTorrentTask.int("id")
+                if (taskId != null) {
+                    successfulTaskIds += taskId
+                }
+            } else {
+                LOG.error("Transmission rejected torrent[${toTorrentTask.string("content")}], keeping task for retry.")
+            }
+        }
+
+        if (deleteTask != null) {
+            successfulTaskIds.forEach(deleteTask)
+            return
         }
 
         checkvistService.remote { token ->
-            for (toTorrentTask in toTorrentTasks) {
-                val taskId = toTorrentTask.int("id")
+            for (taskId in successfulTaskIds) {
                 val (_, _, result) = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks/${taskId}.json".httpDelete(
                     listOf("token" to token)
                 )
                     .response()
                 if (result is Result.Failure) {
-                    LOG.error("Failed to delete task for [${toTorrentTask.string("content")}].", result.error.exception)
+                    LOG.error("Failed to delete task for taskId[$taskId].", result.error.exception)
                 }
             }
         }

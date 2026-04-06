@@ -28,5 +28,6 @@ class ShowRss {
             .filter { entry ->
                 entry.publishedDate.time > lastUpdatedTime
             }
+            .sortedBy { entry -> entry.publishedDate.time }
     }
 }
