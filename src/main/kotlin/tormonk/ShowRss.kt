@@ -12,9 +12,9 @@ import java.net.http.HttpResponse
 @Component
 class ShowRss {
     companion object {
-        val SHOWRSS_URL =
+        private const val SHOWRSS_URL =
             "https://showrss.info/user/72839.rss?magnets=true&namespaces=false&name=null&quality=null&re=null"
-        val CLIENT = HttpClient.newHttpClient()
+        private val CLIENT = HttpClient.newHttpClient()
     }
 
     fun getNewItems(lastUpdatedTime: Long): List<SyndEntry> {

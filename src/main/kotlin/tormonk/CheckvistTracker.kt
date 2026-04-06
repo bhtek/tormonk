@@ -10,26 +10,25 @@ import com.github.kittinunf.fuel.httpPost
 import com.github.kittinunf.fuel.httpPut
 import com.github.kittinunf.result.Result
 import com.rometools.rome.feed.synd.SyndEntry
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.io.InputStream
-import java.lang.Long.parseLong
 
 @Component
-class CheckvistTracker {
+class CheckvistTracker(
+    private val checkvistService: CheckvistService,
+) {
     companion object {
         data class EnqueueResult(val timestamp: Long, val success: Boolean)
 
-        const val specialChecklistId: Long = 569126
-        var specialTaskId: Long? = null
-        var specialNoteId: Long? = null
+        private const val specialChecklistId: Long = 569126
+        private var specialTaskId: Long? = null
+        private var specialNoteId: Long? = null
 
-        val getTasksUrl = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks.json"
-        val postTaskUrl = getTasksUrl
-        val postNoteBaseUrl = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks"
-        val LOG: Logger = LoggerFactory.getLogger(CheckvistTracker::class.java.name)
+        private val getTasksUrl = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks.json"
+        private val postTaskUrl = getTasksUrl
+        private val postNoteBaseUrl = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks"
+        private val LOG = LoggerFactory.getLogger(CheckvistTracker::class.java)
 
         fun calculateLastUpdateTime(previousLastUpdateTime: Long, enqueueResults: List<EnqueueResult>): Long {
             var nextLastUpdateTime = previousLastUpdateTime
@@ -50,9 +49,6 @@ class CheckvistTracker {
             return nextLastUpdateTime
         }
     }
-
-    @Autowired
-    lateinit var checkvistService: CheckvistService
 
     class JsonArrayDeserializer : ResponseDeserializable<JsonArray<JsonObject>> {
         @Suppress("UNCHECKED_CAST")
@@ -105,7 +101,7 @@ class CheckvistTracker {
         val commentString = noteObj.string("comment")
 
         return try {
-            parseLong(commentString)
+            commentString?.toLong()
         } catch (e: Exception) {
             LOG.error("Failed to parse comment string [${commentString}].", e)
             null

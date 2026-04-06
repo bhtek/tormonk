@@ -1,27 +1,25 @@
 package tormonk
 
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.runApplication
 import org.springframework.context.annotation.PropertySource
 import org.springframework.http.HttpStatus
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Controller
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestMethod
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 
 @SpringBootApplication
 @EnableScheduling
 @PropertySource("classpath:/config.local.properties", ignoreResourceNotFound = true)
-open class TorMonkApplication {
+class TorMonkApplication {
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
-            val app = SpringApplication.run(TorMonkApplication::class.java, *args)
+            val app = runApplication<TorMonkApplication>(*args)
             val tjc: TorrentJobContainer = app.getBean(TorrentJobContainer::class.java)
             tjc.checkForTorrents()
         }
@@ -34,7 +32,7 @@ class TorrentJobContainer(
     private val showRss: ShowRss,
 ) {
     companion object {
-        val LOG = LoggerFactory.getLogger(TorrentJobContainer::class.java.name)!!
+        private val LOG = LoggerFactory.getLogger(TorrentJobContainer::class.java)
     }
 
     @Scheduled(cron = "0 2,11,23,33,42,52 * * * *")
@@ -59,13 +57,12 @@ class TorrentJobContainer(
 }
 
 @Controller
-open class TorController {
-    @Autowired
-    lateinit var tjc: TorrentJobContainer
-
-    @RequestMapping("/track", method = arrayOf(RequestMethod.POST))
+class TorController(
+    private val tjc: TorrentJobContainer,
+) {
+    @PostMapping("/track")
     @ResponseStatus(value = HttpStatus.OK)
-    open fun trackNow() {
+    fun trackNow() {
         tjc.checkForTorrents()
     }
 }

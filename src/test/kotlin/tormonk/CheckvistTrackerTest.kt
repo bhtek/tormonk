@@ -7,14 +7,11 @@ import com.github.kittinunf.fuel.core.FuelManager
 import com.github.kittinunf.fuel.core.Request
 import com.github.kittinunf.fuel.core.Response
 import com.github.kittinunf.fuel.core.requests.DefaultBody
-import com.rometools.rome.feed.synd.SyndEntry
-import com.rometools.rome.feed.synd.SyndEntryImpl
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.CoreMatchers.notNullValue
 import org.hamcrest.MatcherAssert.assertThat
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import java.util.Date
 
 class CheckvistTrackerTest {
     @Test
@@ -26,9 +23,9 @@ class CheckvistTrackerTest {
             }
         }
 
-        val tracker = CheckvistTracker()
-        tracker.checkvistService = CheckvistService()
-        tracker.checkvistService.afterPropertiesSet()
+        val checkvistService = CheckvistService()
+        checkvistService.afterPropertiesSet()
+        val tracker = CheckvistTracker(checkvistService)
         val allTasks = tracker.getAllTasks()
         assertThat(allTasks, notNullValue())
         assertThat(tracker.getLastUpdateTime(allTasks!!), equalTo(123L))
@@ -80,7 +77,7 @@ class CheckvistTrackerTest {
 
     @Test
     fun processTasks_deletesOnlySuccessfulAddsAndContinuesOnMalformedTasks() {
-        val tracker = CheckvistTracker()
+        val tracker = CheckvistTracker(CheckvistService())
         val deletedTaskIds = mutableListOf<Int>()
         val seenLinks = mutableListOf<String>()
 
@@ -113,14 +110,5 @@ class CheckvistTrackerTest {
                 "notes" to JsonArray(listOf(JsonObject(mapOf("comment" to link))))
             )
         )
-    }
-
-    @Suppress("unused")
-    private fun syndEntry(title: String, link: String, publishedAt: Long): SyndEntry {
-        return SyndEntryImpl().apply {
-            this.title = title
-            this.link = link
-            this.publishedDate = Date(publishedAt)
-        }
     }
 }
