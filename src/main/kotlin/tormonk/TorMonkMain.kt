@@ -1,5 +1,6 @@
 package tormonk
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.PropertySource
@@ -30,20 +31,18 @@ class TorrentJobContainer(
     private val checkvistTracker: CheckvistTracker,
     private val showRss: ShowRss,
 ) {
-    companion object {
-        private val LOG by logger()
-    }
+    private val LOG = KotlinLogging.logger {}
 
     @Scheduled(cron = "0 2,11,23,33,42,52 * * * *")
     fun checkForTorrents() {
-        LOG.info("Check start.")
+        LOG.info { "Check start." }
 
         val allTasks = checkvistTracker.getAllTasks() ?: return
         val lastUpdateTime = checkvistTracker.getLastUpdateTime(allTasks) ?: return
         checkvistTracker.processTasks(allTasks)
 
         val newEntries = showRss.getNewItems(lastUpdateTime)
-        LOG.info("Check done, found [${newEntries.size}] item(s).")
+        LOG.info { "Check done, found [${newEntries.size}] item(s)." }
 
         if (newEntries.isNotEmpty()) {
             val enqueueResults = checkvistTracker.addTorrentTasks(newEntries)

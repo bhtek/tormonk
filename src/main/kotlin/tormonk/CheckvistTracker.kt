@@ -10,6 +10,7 @@ import com.github.kittinunf.fuel.httpPost
 import com.github.kittinunf.fuel.httpPut
 import com.github.kittinunf.result.Result
 import com.rometools.rome.feed.synd.SyndEntry
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Component
 import java.io.InputStream
 
@@ -17,6 +18,8 @@ import java.io.InputStream
 class CheckvistTracker(
     private val checkvistService: CheckvistService,
 ) {
+    private val LOG = KotlinLogging.logger {}
+
     companion object {
         data class EnqueueResult(val timestamp: Long, val success: Boolean)
 
@@ -27,7 +30,6 @@ class CheckvistTracker(
         private val getTasksUrl = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks.json"
         private val postTaskUrl = getTasksUrl
         private val postNoteBaseUrl = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks"
-        private val LOG by logger()
 
         fun calculateLastUpdateTime(previousLastUpdateTime: Long, enqueueResults: List<EnqueueResult>): Long {
             var nextLastUpdateTime = previousLastUpdateTime
@@ -65,7 +67,7 @@ class CheckvistTracker(
                 .responseObject(JsonArrayDeserializer())
 
             if (result is Result.Failure) {
-                LOG.error("Remote service GET [$getTasksUrl] failed.", result.error.exception)
+                LOG.error(result.error.exception) { "Remote service GET [$getTasksUrl] failed." }
                 return null
             }
             return result.get()
@@ -78,7 +80,7 @@ class CheckvistTracker(
         }
 
         if (lastUploadedJsonObject.isEmpty()) {
-            LOG.error("Failed to load proper task object from JSON.")
+            LOG.error { "Failed to load proper task object from JSON." }
             return null
         }
 
@@ -86,13 +88,13 @@ class CheckvistTracker(
         val notesJsonArr = lastUploadedJsonObject[0].array<JsonObject>("notes")
 
         if (notesJsonArr == null) {
-            LOG.error("Failed to find note object array from JSON.")
+            LOG.error { "Failed to find note object array from JSON." }
             return null
         }
         val noteObj = notesJsonArr.getOrNull(0)
 
         if (noteObj == null) {
-            LOG.error("Failed to identify expected note object from JSON.")
+            LOG.error { "Failed to identify expected note object from JSON." }
             return null
         }
 
@@ -102,7 +104,7 @@ class CheckvistTracker(
         return try {
             commentString?.toLong()
         } catch (e: Exception) {
-            LOG.error("Failed to parse comment string [${commentString}].", e)
+            LOG.error(e) { "Failed to parse comment string [$commentString]." }
             null
         }
     }
@@ -114,13 +116,13 @@ class CheckvistTracker(
                 val (_, _, result) = postTaskUrl.httpPost(listOf("token" to token, "task[content]" to item.title))
                     .responseObject(JsonObjectDeserializer())
                 if (result is Result.Failure) {
-                    LOG.error("Remote service POST [$getTasksUrl] failed.", result.error.exception)
+                    LOG.error(result.error.exception) { "Remote service POST [$getTasksUrl] failed." }
                     return@map EnqueueResult(timestamp, false)
                 }
 
                 val taskJson: JsonObject = result.get()
                 val taskId = taskJson.int("id")
-                LOG.info("Successfully posted task[${taskId}] for title[${item.title}] at pub date [$timestamp].")
+                LOG.info { "Successfully posted task[$taskId] for title[${item.title}] at pub date [$timestamp]." }
 
                 val (_, _, nResult) = "${postNoteBaseUrl}/${taskId}/comments.json".httpPost(
                     listOf(
@@ -130,10 +132,10 @@ class CheckvistTracker(
                 )
                     .responseString()
                 if (nResult is Result.Failure) {
-                    LOG.error("Remote service POST for note of taskId[${taskId}] failed.", nResult.error.exception)
+                    LOG.error(nResult.error.exception) { "Remote service POST for note of taskId[$taskId] failed." }
                     return@map EnqueueResult(timestamp, false)
                 }
-                LOG.info("Successfully posted note for task[${taskId}].")
+                LOG.info { "Successfully posted note for task[$taskId]." }
                 EnqueueResult(timestamp, true)
             }
         }
@@ -141,7 +143,7 @@ class CheckvistTracker(
 
     fun setLastUpdateTime(lastUpdateTime: Long) {
         if (specialTaskId == null || specialNoteId == null) {
-            LOG.error("specialNoteId is null, need to call getLastUpdateTime() at least once before this method.")
+            LOG.error { "specialNoteId is null, need to call getLastUpdateTime() at least once before this method." }
             return
         }
 
@@ -151,9 +153,9 @@ class CheckvistTracker(
             val (_, _, result) = updateNoteUrl.httpPut(listOf("token" to token, "comment[comment]" to lastUpdateTime))
                 .response()
             if (result is Result.Failure) {
-                LOG.error("Remote service PUT failed.", result.error.exception)
+                LOG.error(result.error.exception) { "Remote service PUT failed." }
             } else {
-                LOG.info("Last update time updated to [$lastUpdateTime].")
+                LOG.info { "Last update time updated to [$lastUpdateTime]." }
             }
         }
     }
@@ -178,33 +180,33 @@ class CheckvistTracker(
             val notesJsonArr = toTorrentTask.array<JsonObject>("notes")
 
             if (notesJsonArr == null) {
-                LOG.error("Failed to find note object array from JSON.")
+                LOG.error { "Failed to find note object array from JSON." }
                 continue
             }
 
             val noteObj = notesJsonArr.getOrNull(0)
 
             if (noteObj == null) {
-                LOG.error("Failed to identify expected note object from JSON.")
+                LOG.error { "Failed to identify expected note object from JSON." }
                 continue
             }
 
             val link = noteObj.string("comment")
             if (link == null) {
-                LOG.error("Failed to identify expected magnet link from JSON.")
+                LOG.error { "Failed to identify expected magnet link from JSON." }
                 continue
             }
 
             val exitCode = sendTorrent(link)
 
-            LOG.info("Sent torrent[${toTorrentTask.string("content")}] w/ magnet[$link] to home w/ exit code of $exitCode.")
+            LOG.info { "Sent torrent[${toTorrentTask.string("content")}] w/ magnet[$link] to home w/ exit code of $exitCode." }
             if (exitCode == 0) {
                 val taskId = toTorrentTask.int("id")
                 if (taskId != null) {
                     successfulTaskIds += taskId
                 }
             } else {
-                LOG.error("Transmission rejected torrent[${toTorrentTask.string("content")}], keeping task for retry.")
+                LOG.error { "Transmission rejected torrent[${toTorrentTask.string("content")}], keeping task for retry." }
             }
         }
 
@@ -220,7 +222,7 @@ class CheckvistTracker(
                 )
                     .response()
                 if (result is Result.Failure) {
-                    LOG.error("Failed to delete task for taskId[$taskId].", result.error.exception)
+                    LOG.error(result.error.exception) { "Failed to delete task for taskId[$taskId]." }
                 }
             }
         }

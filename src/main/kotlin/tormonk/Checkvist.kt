@@ -2,14 +2,16 @@ package tormonk
 
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.result.Result
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.beans.factory.InitializingBean
 import org.springframework.stereotype.Component
 import java.io.File
 
 @Component
 class CheckvistService : InitializingBean {
+    private val LOG = KotlinLogging.logger {}
+
     companion object {
-        private val LOG by logger()
         private const val baseUrl = "https://checkvist.com"
         val checklistBaseUrl = "$baseUrl/checklists"
         // e.g. https://checkvist.com/auth/refresh_token.json?old_token=jX0MvhozWsWEsj&with_notes=true
@@ -35,7 +37,7 @@ class CheckvistService : InitializingBean {
         }
 
         val token = result.get().replace(Regex("\""), "")
-        LOG.info("Successfully retrieved refreshed token[${token}].")
+        LOG.info { "Successfully retrieved refreshed token[$token]." }
 
         return token
     }

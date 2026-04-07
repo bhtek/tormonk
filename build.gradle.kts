@@ -34,6 +34,7 @@ kotlin {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("io.github.oshai:kotlin-logging-jvm:7.0.3")
 
     implementation("com.beust:klaxon:5.6")
     implementation("com.github.kittinunf.fuel:fuel:2.3.1")
