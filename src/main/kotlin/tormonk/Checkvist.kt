@@ -2,7 +2,6 @@ package tormonk
 
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.result.Result
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.InitializingBean
 import org.springframework.stereotype.Component
 import java.io.File
@@ -10,7 +9,7 @@ import java.io.File
 @Component
 class CheckvistService : InitializingBean {
     companion object {
-        private val LOG = LoggerFactory.getLogger(CheckvistService::class.java)
+        private val LOG by logger()
         private const val baseUrl = "https://checkvist.com"
         val checklistBaseUrl = "$baseUrl/checklists"
         // e.g. https://checkvist.com/auth/refresh_token.json?old_token=jX0MvhozWsWEsj&with_notes=true

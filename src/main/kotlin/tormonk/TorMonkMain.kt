@@ -1,6 +1,5 @@
 package tormonk
 
-import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.PropertySource
@@ -32,7 +31,7 @@ class TorrentJobContainer(
     private val showRss: ShowRss,
 ) {
     companion object {
-        private val LOG = LoggerFactory.getLogger(TorrentJobContainer::class.java)
+        private val LOG by logger()
     }
 
     @Scheduled(cron = "0 2,11,23,33,42,52 * * * *")

@@ -10,7 +10,6 @@ import com.github.kittinunf.fuel.httpPost
 import com.github.kittinunf.fuel.httpPut
 import com.github.kittinunf.result.Result
 import com.rometools.rome.feed.synd.SyndEntry
-import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.InputStream
 
@@ -28,7 +27,7 @@ class CheckvistTracker(
         private val getTasksUrl = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks.json"
         private val postTaskUrl = getTasksUrl
         private val postNoteBaseUrl = "${CheckvistService.checklistBaseUrl}/${specialChecklistId}/tasks"
-        private val LOG = LoggerFactory.getLogger(CheckvistTracker::class.java)
+        private val LOG by logger()
 
         fun calculateLastUpdateTime(previousLastUpdateTime: Long, enqueueResults: List<EnqueueResult>): Long {
             var nextLastUpdateTime = previousLastUpdateTime
