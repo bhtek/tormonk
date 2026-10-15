@@ -2,33 +2,18 @@ package tormonk
 
 import com.beust.klaxon.JsonArray
 import com.beust.klaxon.JsonObject
-import com.github.kittinunf.fuel.core.Client
-import com.github.kittinunf.fuel.core.FuelManager
-import com.github.kittinunf.fuel.core.Request
-import com.github.kittinunf.fuel.core.Response
-import com.github.kittinunf.fuel.core.requests.DefaultBody
-import org.hamcrest.CoreMatchers.equalTo
-import org.hamcrest.CoreMatchers.notNullValue
-import org.hamcrest.MatcherAssert.assertThat
-import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class CheckvistTrackerTest {
     @Test
-    @Disabled
     fun getLastUpdatedTime_simple() {
-        FuelManager.instance.client = object : Client {
-            override fun executeRequest(request: Request): Response {
-                return Response(request.url, 200, body = DefaultBody({ javaClass.getResourceAsStream("/getLastUpdatedTime_simple.json") }))
-            }
+        val tracker = CheckvistTracker(CheckvistService())
+        val allTasks = checkNotNull(javaClass.getResourceAsStream("/getLastUpdatedTime_simple.json")).use {
+            CheckvistTracker.JsonArrayDeserializer().deserialize(it)
         }
 
-        val checkvistService = CheckvistService()
-        checkvistService.afterPropertiesSet()
-        val tracker = CheckvistTracker(checkvistService)
-        val allTasks = tracker.getAllTasks()
-        assertThat(allTasks, notNullValue())
-        assertThat(tracker.getLastUpdateTime(allTasks!!), equalTo(123L))
+        assertEquals(123L, tracker.getLastUpdateTime(allTasks))
     }
 
     @Test
@@ -42,7 +27,7 @@ class CheckvistTrackerTest {
             )
         )
 
-        assertThat(nextTime, equalTo(400L))
+        assertEquals(400L, nextTime)
     }
 
     @Test
@@ -56,7 +41,7 @@ class CheckvistTrackerTest {
             )
         )
 
-        assertThat(nextTime, equalTo(100L))
+        assertEquals(100L, nextTime)
     }
 
     @Test
@@ -72,7 +57,7 @@ class CheckvistTrackerTest {
             )
         )
 
-        assertThat(nextTime, equalTo(200L))
+        assertEquals(200L, nextTime)
     }
 
     @Test
@@ -97,8 +82,8 @@ class CheckvistTrackerTest {
             deleteTask = { taskId -> deletedTaskIds += taskId }
         )
 
-        assertThat(seenLinks, equalTo(listOf("magnet:?ok", "magnet:?fail")))
-        assertThat(deletedTaskIds, equalTo(listOf(1)))
+        assertEquals(listOf("magnet:?ok", "magnet:?fail"), seenLinks)
+        assertEquals(listOf(1), deletedTaskIds)
     }
 
     private fun task(id: Int, title: String, link: String, status: Int): JsonObject {

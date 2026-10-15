@@ -14,7 +14,6 @@ class CheckvistService : InitializingBean {
     companion object {
         private const val baseUrl = "https://checkvist.com"
         val checklistBaseUrl = "$baseUrl/checklists"
-        // e.g. https://checkvist.com/auth/refresh_token.json?old_token=jX0MvhozWsWEsj&with_notes=true
         private val refreshTokenBaseUrl = "$baseUrl/auth/refresh_token.json"
         private const val tokenExpiryMillis: Long = 1000 * 60 * 60 * 23
         private val tokenFile = File("${System.getProperty("user.home")}/.tormonk.token")
@@ -37,7 +36,7 @@ class CheckvistService : InitializingBean {
         }
 
         val token = result.get().replace(Regex("\""), "")
-        LOG.info { "Successfully retrieved refreshed token[$token]." }
+        LOG.info { "Successfully refreshed Checkvist token." }
 
         return token
     }
